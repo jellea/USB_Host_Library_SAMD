@@ -15,9 +15,12 @@ Web      :  http://www.circuitsathome.com
 e-mail   :  support@circuitsathome.com
 */
 
-#if !defined(_usb_h_) || defined(_ch9_h_)
-#error "Never include usb_ch9.h directly; include Usb.h instead"
-#else
+// #if !defined(_usb_h_) || defined(_ch9_h_)
+// #error "Never include usb_ch9.h directly; include Usb.h instead"
+// #else
+
+#ifndef USB_CH9_H_INCLUDED
+#define USB_CH9_H_INCLUDED
 
 /* USB chapter 9 structures */
 #define _ch9_h_

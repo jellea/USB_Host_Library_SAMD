@@ -15,9 +15,12 @@ Web      :  http://www.circuitsathome.com
 e-mail   :  support@circuitsathome.com
 */
 
-#if !defined(_usb_h_) || defined(__CONFDESCPARSER_H__)
-#error "Never include confdescparser.h directly; include Usb.h instead"
-#else
+#ifndef CONFDESCPARSER_H_INCLUDED
+#define CONFDESCPARSER_H_INCLUDED
+
+// #if !defined(_usb_h_) || defined(__CONFDESCPARSER_H__)
+// #error "Never include confdescparser.h directly; include Usb.h instead"
+// #else
 
 #define __CONFDESCPARSER_H__
 

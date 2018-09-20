@@ -349,6 +349,9 @@ uint32_t USBHost::InTransfer(EpInfo *pep, uint32_t nak_limit, uint16_t *nbytespt
             delay(bInterval); // Delay according to polling interval
 	} //while( 1 )
 	uhd_freeze_pipe(pep->epAddr);
+
+    *nbytesptr = 32;
+
 	return ( rcode);
 }
 

@@ -122,7 +122,7 @@ uint32_t USBHost::UHD_Pipe_Alloc(uint32_t ul_dev_addr, uint32_t ul_dev_ep, uint3
 
 
 
-uint32_t USBHost::SetPipeAddress(uint32_t addr, uint32_t ep, EpInfo **ppep, uint32_t &nak_limit) {
+uint32_t USBHost::SetPipeAddress(uint32_t addr, uint32_t ep, EpInfo **ppep, uint32_t &nak_limit, uint32_t direction) {
 	UsbDeviceDefinition *p = addrPool.GetUsbDevicePtr(addr);
 
 	if(!p)
@@ -148,7 +148,7 @@ uint32_t USBHost::SetPipeAddress(uint32_t addr, uint32_t ep, EpInfo **ppep, uint
          */
 
     if (ep) {
-		UHD_Pipe_Alloc(addr, ep, (*ppep)->bmAttribs, (*ppep)->epAddr & 0x80, (*ppep)->maxPktSize, 0, USB_HOST_NB_BK_1);
+		UHD_Pipe_Alloc(addr, ep, (*ppep)->bmAttribs, direction, (*ppep)->maxPktSize, 0, USB_HOST_NB_BK_1);
 	}
 	else {
 		// CTRL_PIPE.PDADDR: usb_pipe_table[pipe_num].HostDescBank[0].CTRL_PIPE.bit.PDADDR = addr
@@ -175,7 +175,7 @@ uint32_t USBHost::ctrlReq(uint32_t addr, uint32_t ep, uint8_t bmReqType, uint8_t
 
 	TRACE_USBHOST(printf("    => ctrlReq\r\n");)
 
-	rcode = SetPipeAddress(addr, ep, &pep, nak_limit);
+	rcode = SetPipeAddress(addr, ep, &pep, nak_limit, bmReqType & 0x80);
 	if(rcode)
 		return rcode;
 
@@ -259,7 +259,7 @@ uint32_t USBHost::inTransfer(uint32_t addr, uint32_t ep, uint16_t *nbytesptr, ui
 	EpInfo *pep = NULL;
 	uint32_t nak_limit = 0;
 
-	uint32_t rcode = SetPipeAddress(addr, ep, &pep, nak_limit);
+	uint32_t rcode = SetPipeAddress(addr, ep, &pep, nak_limit, USB_EP_DIR_IN);
 
         if(rcode) {
                 USBTRACE3("(USB::InTransfer) SetAddress Failed ", rcode, 0x81);
@@ -312,7 +312,6 @@ uint32_t USBHost::InTransfer(EpInfo *pep, uint32_t nak_limit, uint16_t *nbytespt
         /* the only case when absence of RCVDAVIRQ makes sense is when toggle error occurred. Need to add handling for that */
 				
 		pktsize = uhd_byte_count(pep->epAddr); // Number of received bytes
-		
 		USB->HOST.HostPipe[pep->epAddr].PSTATUSCLR.reg = USB_HOST_PSTATUSCLR_BK0RDY;
         
 		//printf("Got %i bytes \r\n", pktsize);
@@ -363,7 +362,7 @@ uint32_t USBHost::outTransfer(uint32_t addr, uint32_t ep, uint32_t nbytes, uint8
 	EpInfo *pep = NULL;
 	uint32_t nak_limit = 0;
 
-	uint32_t rcode = SetPipeAddress(addr, ep, &pep, nak_limit);
+	uint32_t rcode = SetPipeAddress(addr, ep, &pep, nak_limit, 0);
 
 	if(rcode)
 		return rcode;
@@ -478,7 +477,6 @@ uint32_t USBHost::dispatchPkt(uint32_t token, uint32_t epAddr, uint32_t nak_limi
 				return (rcode);
 			}
 		}
-
 		//case hrNAK:
 		if( (usb_pipe_table[epAddr].HostDescBank[0].STATUS_BK.reg & USB_ERRORFLOW ) ) {
 			nak_count++;
@@ -875,7 +873,7 @@ uint32_t USBHost::getConfDescr(uint32_t addr, uint32_t ep, uint32_t nbytes, uint
 /* Requests Configuration Descriptor. Sends two Get Conf Descr requests. The first one gets the total length of all descriptors, then the second one requests this
  total length. The length of the first request can be shorter ( 4 bytes ), however, there are devices which won't work unless this length is set to 9 */
 uint32_t USBHost::getConfDescr(uint32_t addr, uint32_t ep, uint32_t conf, USBReadParser *p) {
-	uint8_t buf[128];
+	uint8_t buf[384];
 	USB_CONFIGURATION_DESCRIPTOR *ucd = reinterpret_cast<USB_CONFIGURATION_DESCRIPTOR *>(buf);
 
 	uint32_t ret = getConfDescr(addr, ep, 9, conf, buf);
